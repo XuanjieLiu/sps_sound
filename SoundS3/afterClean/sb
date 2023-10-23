@@ -1,0 +1,19 @@
+pushd ./ae_symm_4_repeat/
+sbatch train.sbatch
+popd
+
+pushd ./vae_symm_0_repeat/
+sbatch train.sbatch
+popd
+
+pushd ./vae_symm_4_no_repeat/
+sbatch train.sbatch
+popd
+
+pushd ./vae_symm_4_repeat/
+sbatch train.sbatch
+popd
+
+pushd ./vae_symm_4_repeat_timbre10d/
+sbatch train.sbatch
+popd
