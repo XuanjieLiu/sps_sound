@@ -6,8 +6,8 @@
 #SBATCH --mem=6GB
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=s3plus
-#SBATCH --output=ceiling_test.out
-#SBATCH --error=ceiling_test.err
+#SBATCH --output=scale_singleInst_1dim_1.out
+#SBATCH --error=scale_singleInst_1dim_1.err
 #SBATCH --partition=gpu
 #SBATCH --qos=gpu-8
 
@@ -17,3 +17,6 @@ hostname
 
 
 source activate xuanjie
+
+cd /l/users/xuanjie.liu/sps_sound/SoundS3/standard_model
+python main_train.py --name scale_singleInst_1dim_1  --seq_len 15  --data_folder cleanTrain_accordion   --n_runs 10

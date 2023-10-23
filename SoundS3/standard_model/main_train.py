@@ -3,6 +3,7 @@ import sys
 import argparse
 import torch
 import numpy as np
+import json
 
 SCRIPT_DIR = '\\'.join(os.path.dirname(os.path.abspath(__file__)).split('\\')[:-1])
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -67,7 +68,9 @@ if __name__ == '__main__':
     CONFIG['eval_recons'] = args.eval_recons
     CONFIG['batch_size'] = args.batch_size
     print(CONFIG['eval_recons'])
-
+    with open(f'./new_dumpster/{args.name}_config.txt', 'w') as convert_file:
+        for key, value in CONFIG.items():
+            convert_file.write('%s:%s\n' % (key, value))
 
     # torch.manual_seed(21)
 
@@ -89,6 +92,7 @@ if __name__ == '__main__':
         CONFIG['eval_record_path'] = f'./new_dumpster/{name}Eval_record.txt'
 
         trainer = BallTrainer(CONFIG)
+
         if args.eval_recons or is_need_train(CONFIG):
             out = trainer.train()
             if args.eval_recons:
