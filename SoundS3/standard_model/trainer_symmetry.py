@@ -220,10 +220,8 @@ class BallTrainer:
             z_gt_cr = repeat_one_dim(z_gt_c, sample_range=10)
             z_gt_cr_extended = repeat_one_dim(z_gt_c, sample_range=10, repeat_times=z_gt_c.shape[1] + self.config['additional_symm_steps'])
             z_gt_cr = z_gt_cr_extended[:z_gt_cr.shape[0], :z_gt_cr.shape[1], :z_gt_cr.shape[2]]
-            if self.config['no_repetition']:
+            if self.config['no_repetition'] or self.config['beta_vae']:
                 z_combine = torch.cat((z_gt_p, z_gt_c), -1)
-            elif self.config['beta_vae']:
-                z_combine = torch.cat((z_gt_p, torch.zeros_like(z_gt_p), torch.zeros_like(z_gt_p)), -1)
             else:
                 z_combine = torch.cat((z_gt_p, z_gt_cr), -1)
             # R, Rr, theta = make_random_rotation_batch(batch_size=BATCH_SIZE * self.r_batch_multiple,
