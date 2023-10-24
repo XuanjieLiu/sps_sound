@@ -29,7 +29,8 @@ if __name__ == '__main__':
     parser.add_argument('--no_rep', action='store_true')
     parser.add_argument('--symm_against_rnn', action='store_true')
     parser.add_argument('--additional_symm_steps', type=int, default=0) 
-    parser.add_argument('--symm_start_step', type=int, default=0) # Set this to 15 to apply symm loss only on OOR steps 
+    parser.add_argument('--symm_start_step', type=int, default=0) # Set this to 15 to apply symm loss only on OOR steps
+    parser.add_argument('--max_iter_num', type=int, default=15001)
 
     # RNN params
     parser.add_argument('--rnn_num_layers', type=int, default=1)
@@ -44,6 +45,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--n_runs', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=20)
+
+    parser.add_argument('--kld_loss_scalar', type=float, default=0.01)
 
     # Eval
     parser.add_argument('--eval_recons', action='store_true')
@@ -67,6 +70,8 @@ if __name__ == '__main__':
     CONFIG['ae'] = args.ae
     CONFIG['eval_recons'] = args.eval_recons
     CONFIG['batch_size'] = args.batch_size
+    CONFIG['kld_loss_scalar'] = args.kld_loss_scalar
+    CONFIG['max_iter_num'] = args.max_iter_num
     print(CONFIG['eval_recons'])
     with open(f'./new_dumpster/{args.name}_config.txt', 'w') as convert_file:
         for key, value in CONFIG.items():

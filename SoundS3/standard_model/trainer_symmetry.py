@@ -256,7 +256,7 @@ class BallTrainer:
                 data[:, 1:, :, :, :], z_gt_p, z0_rnn_extended, T_sample_points, DT_BATCH_MULTIPLE,
                 lambda z: symm_trans(z, T), lambda z: symm_trans(z, Tr), z_gt_cr_extended[:, :-1, :]
             )
-            if self.config['no_symm']:
+            if self.config['no_symm'] or self.config['beta_vae']:
                 T_loss = (torch.zeros(2))
 
             loss = self.loss_func(vae_loss, rnn_loss, T_loss, R_loss, Z_loss, train_loss_counter)

@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser()
 
 # parser.add_argument('--name', default='jan7/scale_singleInst_1dim_1_0_Conv2dNOTGruConv2d_symmetry')
 # parser.add_argument('--name', default='scale_singleInst_real_1dim_1_noSymm_2_checkpoint_4000')
-parser.add_argument('--name', default='scale_singleInst_real_1dim_1_1_checkpoint_4000')
+parser.add_argument('--name', default='oct17/test_Real_0.01_Conv2dNOTGruConv2d_symmetry')
 # parser.add_argument('--name', default='scale_singleInst_1dim_1_0_checkpoint_5000')
 parser.add_argument('--seq_len', type=int, default=15)
 
@@ -75,7 +75,7 @@ n_fft = 1024
 win_length = 1024
 hop_length = 512
 sample_rate = 16000
-RANGE = 6.
+RANGE = 12.
 
 
 
