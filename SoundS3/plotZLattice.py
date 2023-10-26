@@ -12,7 +12,7 @@ FIGSIZE = (13, 5)
 
 import rc_params
 rc_params.init()
-from linearity_shared_textedit import *
+from linearity_shared import *
 
 plt.rcParams.update({
     'text.usetex': True, 

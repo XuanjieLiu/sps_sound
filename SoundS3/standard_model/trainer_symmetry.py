@@ -126,7 +126,6 @@ class BallTrainer:
         self.sample_prob_param_beta = config['sample_prob_param_beta']
         self.enable_SRS = config['enable_SRS']
         self.is_save_img = config['is_save_img']
-        self.fixed_dim_sample_range = config['fixed_dim_sample_range']
         self.griffin_lim = T.GriffinLim(
             n_fft=n_fft,
             win_length=win_length,

@@ -30,7 +30,6 @@ CONFIG = {
     'sample_prob_param_beta': 8000,
     'rnn_type': 'RNN',
     'is_save_img': True,
-    'fixed_dim_sample_range': 10,
     'beta_vae': False,
     'batch_size': 32
 }

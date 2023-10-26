@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import rc_params
 rc_params.init()
-from linearity_shared_all import *
+from linearity_shared import *
 
 def main():
     for (

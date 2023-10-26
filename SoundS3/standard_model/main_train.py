@@ -73,9 +73,10 @@ if __name__ == '__main__':
     CONFIG['kld_loss_scalar'] = args.kld_loss_scalar
     CONFIG['max_iter_num'] = args.max_iter_num
     print(CONFIG['eval_recons'])
-    with open(f'./new_dumpster/{args.name}_config.txt', 'w') as convert_file:
-        for key, value in CONFIG.items():
-            convert_file.write('%s:%s\n' % (key, value))
+    if not args.eval_recons:
+        with open(f'./new_dumpster/{args.name}_config.txt', 'w') as convert_file:
+            for key, value in CONFIG.items():
+                convert_file.write('%s:%s\n' % (key, value))
 
     # torch.manual_seed(21)
 

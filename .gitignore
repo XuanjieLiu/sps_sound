@@ -20,3 +20,4 @@ SoundS3/yin.py
 debug.py
 SoundS3/standard_model/checkpoints/
 data/
+*.rar

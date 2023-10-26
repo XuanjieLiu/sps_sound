@@ -20,7 +20,7 @@ from tqdm import tqdm
 from dataset_config import *
 from intruments_and_ranges import intruments_ranges
 
-PROLONG = True
+PROLONG = False
 BEND_RATIO = .5  # When MIDI specification is incomplete...
 BEND_MAX = 8191
 GRACE_END = .1
@@ -28,15 +28,15 @@ TEMP_MIDI_FILE = './temp/temp.mid'
 TEMP_WAV_FILE  = './temp/temp.wav'
 
 SOUND_FONT_PATH = './FluidR3_GM/FluidR3_GM.sf2'
-DATASET_PATH = './datasets/cleanTrain4'
+DATASET_PATH = '../data/cleanTest'
 # DATASET_PATH = './datasets/single_note'
 
 # SOUND_FONT_PATH = './FluidR3_GM/GeneralUser GS v1.471.sf2'
 # DATASET_PATH = './datasets/cleanTrain_GU'
 # DATASET_PATH = './datasets/single_note_GU'
 # DATASET_PATH = './datasets/non12tet'
-# MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11, 12, 11, 9, 7, 5, 4, 2, 0]
-MAJOR_SCALE = [0]
+MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11, 12, 11, 9, 7, 5, 4, 2, 0]
+# MAJOR_SCALE = [0]
 RANDOM_BEND = True
 # MAJOR_SCALE = [i+0.5 for i in MAJOR_SCALE]
 
