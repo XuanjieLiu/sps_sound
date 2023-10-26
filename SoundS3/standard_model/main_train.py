@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=20)
 
     parser.add_argument('--kld_loss_scalar', type=float, default=0.01)
+    parser.add_argument('--base_len', type=int, default=3)
 
     # Eval
     parser.add_argument('--eval_recons', action='store_true')
@@ -72,6 +73,7 @@ if __name__ == '__main__':
     CONFIG['batch_size'] = args.batch_size
     CONFIG['kld_loss_scalar'] = args.kld_loss_scalar
     CONFIG['max_iter_num'] = args.max_iter_num
+    CONFIG['base_len']= args.base_len
     print(CONFIG['eval_recons'])
     if not args.eval_recons:
         with open(f'./new_dumpster/{args.name}_config.txt', 'w') as convert_file:

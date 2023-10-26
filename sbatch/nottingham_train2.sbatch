@@ -20,8 +20,9 @@ source activate xuanjie
 
 cd /l/users/xuanjie.liu/sps_sound/SoundS3/standard_model
 python main_train.py \
-  --name nottingham_singleInst_1dim  \
-  --seq_len 64  \
+  --name nottingham_singleInst_1dim_noSymm  \
+  --seq_len 55  \
+  --base_len 10 \
   --data_folder nottingham_eights_pool_accOnly_5000_easier   \
   --n_runs 10 \
   --additional_symm_steps 0 \

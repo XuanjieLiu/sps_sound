@@ -20,7 +20,7 @@ CONFIG = {
     # 'learning_rate': 1e-3,
     'scheduler_base_num': 0.99999,
     # 'max_iter_num': 5001,
-    'base_len': 3,
+    # 'base_len': 3,
     # 'train_result_path': 'TrainingResults/',
     # 'train_record_path': "Train_record.txt",
     # 'eval_record_path': "Eval_record.txt",
