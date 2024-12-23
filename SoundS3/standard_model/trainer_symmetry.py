@@ -223,14 +223,8 @@ class BallTrainer:
                 z_combine = torch.cat((z_gt_p, z_gt_c), -1)
             else:
                 z_combine = torch.cat((z_gt_p, z_gt_cr), -1)
-            # R, Rr, theta = make_random_rotation_batch(batch_size=BATCH_SIZE * self.r_batch_multiple,
-            #                                           angle_range=self.r_range)
-            # Z, Zr = make_rand_zoom_batch(batch_size=BATCH_SIZE * self.z_batch_multiple, dim=np.array([1]),
-            #                              z_range=self.z_range)
             T, Tr = make_translation_batch(batch_size=self.batch_size * DT_BATCH_MULTIPLE, dim=np.array([1]),
                                            t_range=self.t_range)
-            # T = tensor_arrange(DT_BATCH_MULTIPLE, -2.4, 2.4, True).to(DEVICE).unsqueeze(1).repeat(1, BATCH_SIZE).reshape(BATCH_SIZE * DT_BATCH_MULTIPLE, 1)
-            # Tr = -T\
             z0_rnn_extended = self.model.predict_with_symmetry(z_gt_p, I_sample_points, lambda z: z, self.config['additional_symm_steps']) # Except there is no symm function. and this is just pred w/ RNN?
             # extended with out-of-range predictions for long imagination
             z0_rnn = z0_rnn_extended[:, :z_gt.shape[1]-1, :]

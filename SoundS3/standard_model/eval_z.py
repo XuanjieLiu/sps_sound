@@ -47,16 +47,15 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser()
 
 
-parser.add_argument('--name', default='oct17/scale_singleInst_1dim_1_Conv2dNOTGruConv2d_symmetry')
+parser.add_argument('--name', default='scale_singleInst_1dim_noSymm_1_checkpoint_10000')
 parser.add_argument('--seq_len', type=int, default=15)
+parser.add_argument('--base_len', type=int, default=3)
 
 # RNN params
 parser.add_argument('--rnn_num_layers', type=int, default=1)
 parser.add_argument('--rnn_hidden_size', type=int, default=256)
 parser.add_argument('--gru', action='store_true')
 
-# Hyperparams
-parser.add_argument('--lr', type=int, default=1e-3)
 
 args = parser.parse_args()
 
@@ -66,6 +65,7 @@ CONFIG['train_data_path'] = WAV_PATH
 CONFIG['rnn_num_layers'] = args.rnn_num_layers
 CONFIG['rnn_hidden_size'] = args.rnn_hidden_size
 CONFIG['GRU'] = args.gru
+CONFIG['base_len'] = args.base_len
 
 MODEL_PATH = f'./checkpoints/{args.name}.pt'
 
@@ -73,7 +73,7 @@ n_fft = 1024
 win_length = 1024
 hop_length = 512
 sample_rate = 16000
-RANGE = 12.
+RANGE = 18.
 
 
 
@@ -166,7 +166,7 @@ class TestUI:
             hop_length=hop_length,
         )
         self.dataset = Dataset(
-            CONFIG['train_data_path'], CONFIG ,cache_all=False, 
+            CONFIG['train_data_path'], CONFIG ,cache_all=False,
         )
         # self.data_loader = PersistentLoader(self.dataset, 32)
         self.selected_wav_spec_tensor = None

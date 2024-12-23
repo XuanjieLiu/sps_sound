@@ -24,6 +24,7 @@ DATASET_AUG = 1    # dataLoader init has high overhead
 assert WIN_LEN == 2 * HOP_LEN
 N_BINS = WIN_LEN // 2 + 1
 
+
 class Dataset(torch.utils.data.Dataset):
     def __init__(
         self, dataset_path, config={'seq_len': 15}, debug_ifft=False,
@@ -210,6 +211,12 @@ def PersistentLoader(dataset, batch_size, set_break=False):
             yield batch
         if set_break:
             yield 'break'
+
+def get_all_data(dataset: Dataset):
+    all_data = torch.stack([x[2] for x in dataset.data], dim=0)
+    all_pitch = np.array([x[1] for x in dataset.data])
+    all_instr = np.array([x[0] for x in dataset.data])
+    return all_data, all_pitch, all_instr
 
 if __name__ == "__main__":
     dataset = Dataset('../makeSoundDatasets/datasets_out/nottingham_eights_pool_5000_easy')

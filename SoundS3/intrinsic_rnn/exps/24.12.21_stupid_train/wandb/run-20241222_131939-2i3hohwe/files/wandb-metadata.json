@@ -1,0 +1,53 @@
+{
+    "os": "Windows-10-10.0.22631-SP0",
+    "python": "3.10.11",
+    "heartbeatAt": "2024-12-22T09:19:43.284812",
+    "startedAt": "2024-12-22T09:19:39.642567",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "d:\\Projects\\Others Symm\\sps_sound\\SoundS3\\intrinsic_rnn\\main_train.py",
+    "codePathLocal": "..\\..\\main_train.py",
+    "codePath": "SoundS3\\intrinsic_rnn\\main_train.py",
+    "git": {
+        "remote": "https://github.com/XuanjieLiu/sps_sound.git",
+        "commit": "39d6dec2aa8b0d9482e96846e537081cd028eca1"
+    },
+    "email": "liuxuanjie_13zhfx@126.com",
+    "root": "D:/Projects/Others Symm/sps_sound",
+    "host": "MSI",
+    "username": "Lxj",
+    "executable": "C:\\Users\\Lxj\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0\\python.exe",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 2601.0,
+        "min": 0.0,
+        "max": 2601.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2601.0,
+            "min": 0.0,
+            "max": 2601.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 799.9999961853027,
+            "used": 433.8113250732422
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 2060",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2060",
+            "memory_total": 6442450944
+        }
+    ],
+    "memory": {
+        "total": 31.842334747314453
+    }
+}

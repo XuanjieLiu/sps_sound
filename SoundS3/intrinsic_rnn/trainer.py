@@ -20,8 +20,12 @@ import matplotlib.pyplot as plt
 import librosa
 import torchaudio.transforms as T
 import torchaudio
-
 import matplotlib
+from eval_linearity import eval_linearity
+import wandb
+
+WANDB_API_KEY="532007cd7a07c1aa0d1194049c3231dadd1d418e"
+wandb.login(key=WANDB_API_KEY)
 
 matplotlib.use('AGG')
 LOG_K = 12.5
@@ -87,14 +91,26 @@ def symm_rotate_first3dim(z, rotator):
     return torch.cat((z_R.squeeze(1), z[..., 3:]), -1)
 
 
-class BallTrainer:
+def sample_lengths(total=15, prompt_range=None, auto_g_range=None):
+    if prompt_range is None:
+        prompt_range = list(range(3, 6))
+    if auto_g_range is None:
+        auto_g_range = list(range(4, 9))
+    prompt_1, prompt_2 = random.sample(prompt_range, 2)
+    auto_g_1 = random.sample(auto_g_range, 1)[0]
+    auto_g_2 = total - max([prompt_1, prompt_2]) - auto_g_1
+    return prompt_1, prompt_2, auto_g_1, auto_g_2
+
+
+class Trainer:
     def __init__(self, config, is_train=True):
         self.model = Conv2dGruConv2d(config).to(DEVICE)
         self.batch_size = config['batch_size']
         self.dataset = Dataset(config['train_data_path'], config, cache_all=config['seq_len']==15)
-        # self.train_data_loader = PersistentLoader(
-        #     self.dataset, self.batch_size, set_break = config['eval_recons']
-        # )
+        self.eval_dataset = Dataset(config['eval_data_path'], config, cache_all=config['seq_len']==15)
+        self.eval_data_loader = DataLoader(
+            self.eval_dataset, batch_size=self.batch_size, shuffle=True
+        )
         self.train_data_loader = DataLoader(
             self.dataset, batch_size=self.batch_size, shuffle=True
         )
@@ -104,17 +120,8 @@ class BallTrainer:
         self.model_path = config['model_path']
         self.kld_loss_scalar = config['kld_loss_scalar']
         self.z_rnn_loss_scalar = config['z_rnn_loss_scalar']
-        self.z_symm_loss_scalar = config['z_symm_loss_scalar']
-        self.enable_sample = config['enable_sample']
         self.checkpoint_interval = config['checkpoint_interval']
-        self.t_batch_multiple = config['t_batch_multiple']
-        self.r_batch_multiple = config['r_batch_multiple']
-        self.z_batch_multiple = config['z_batch_multiple']
-        self.t_range = config['t_range']
-        self.r_range = config['r_range']
-        self.z_range = config['z_range']
         self.learning_rate = config['learning_rate']
-        self.scheduler_base_num = config['scheduler_base_num']
         self.max_iter_num = config['max_iter_num']
         self.base_len = config['base_len']
         self.train_result_path = config['train_result_path']
@@ -122,30 +129,27 @@ class BallTrainer:
         self.eval_record_path = config['eval_record_path']
         self.log_interval = config['log_interval']
         self.eval_interval = config['eval_interval']
-        self.sample_prob_param_alpha = config['sample_prob_param_alpha']
-        self.sample_prob_param_beta = config['sample_prob_param_beta']
-        self.enable_SRS = config['enable_SRS']
-        self.is_save_img = config['is_save_img']
         self.griffin_lim = T.GriffinLim(
             n_fft=n_fft,
             win_length=win_length,
             hop_length=hop_length,
         )
         self.config = config
-        
-        # Eval recons
-        self.eval_recons_self = []
-        self.eval_recons_pred = []
-        self.eval_recons_prior = []
+        self.is_save_img = config['is_save_img']
+        self.is_intrinsic_train = config['is_intrinsic_train']
+        self.is_normal_train = config['is_normal_train']
+        self.is_stupid_train = config['is_stupid_train']
+        self.linear_schedule = config['linear_schedule']
+        self.is_stupid_add_len = config['is_stupid_add_len']
+
+        self.linear_schedule_rate = self.linear_scheduler_func(0)
+        self.curr_train_iter = 0
+
 
     def save_result_imgs(self, img_list, name, seq_len):
         result = torch.cat([img[0] for img in img_list], dim=0)
         save_image(result, self.train_result_path + str(name) + '.png', seq_len)
 
-    def get_sample_prob(self, step):
-        alpha = self.sample_prob_param_alpha
-        beta = self.sample_prob_param_beta
-        return alpha / (alpha + np.exp((step + beta) / alpha))
 
     def gen_sample_points(self, base_len, total_len, step, enable_sample):
         if not enable_sample:
@@ -165,127 +169,234 @@ class BallTrainer:
         else:
             print("New model is initialized")
 
-    def scheduler_func(self, curr_iter):
-        return self.scheduler_base_num ** curr_iter
+
+    def linear_scheduler_func(self, curr_iter):
+        if self.linear_schedule <= 0:
+            return 0
+        else:
+            sample_rate = 1 - 1 / (self.linear_schedule * self.max_iter_num) * curr_iter
+        return max(0, sample_rate)
+
+
+    def intrinsic_train(self, x, z_gt):
+        prompt_1, prompt_2, auto_g_1, auto_g_2 = sample_lengths()
+        x_loss, z_loss = self.intrinsic_one_step(z_gt, x, prompt_1, prompt_2, auto_g_1, auto_g_2)
+        return x_loss, z_loss
+    
+
+    def intrinsic_one_step(self, z_gt, x, prompt_1, prompt_2, auto_g_1, auto_g_2):
+        total_len_1 = prompt_1 + auto_g_1
+        z_prompt_1 = z_gt
+        z_gt_1 = z_gt[:, :total_len_1, :]
+        sample_1 = list(range(prompt_1))
+        if self.linear_schedule > 0:
+            add_sample_1 = random.sample(range(prompt_1, total_len_1), int(auto_g_1 * self.linear_schedule_rate))
+            sample_1.extend(add_sample_1)
+            print(f"Sample 1 points: {sample_1}")
+        z1_gen = self.model.predict_with_symmetry(z_prompt_1, sample_1, lambda z: z, total_len_1)
+        x_1 = x[:, 1:total_len_1, :, :, :]
+        x_loss_1, z_loss_1 = self.calc_rnn_loss(x_1, z_gt_1, z1_gen)
+
+        total_len_2 = prompt_2 + auto_g_2
+        z_prompt_2 = z1_gen[:, z1_gen.size(1) - prompt_2:, :]
+        z_prompt_2 = torch.cat((z_prompt_2, z_gt[:, total_len_1:, :]), 1)
+        z_gt_2 = z_gt[:, total_len_1 - prompt_2:total_len_1 + auto_g_2, :]
+        sample_2 = list(range(prompt_2))
+        if self.linear_schedule > 0:
+            add_sample_2 = random.sample(range(prompt_2, total_len_2), int(auto_g_2 * self.linear_schedule_rate))
+            sample_2.extend(add_sample_2)
+            print(f"Sample 2 points: {sample_2}")
+        z2_gen = self.model.predict_with_symmetry(z_prompt_2, sample_2, lambda z: z, total_len_2)
+        x_2 = x[:, total_len_1 - prompt_2 + 1:total_len_1 + auto_g_2, :, :, :]
+        x_loss_2, z_loss_2 = self.calc_rnn_loss(x_2, z_gt_2, z2_gen)
+        return x_loss_1 + x_loss_2, z_loss_1 + z_loss_2
+    
+
+    def eval(self, iter_num):
+        self.config['eval_recons'] = True
+        self.model.eval()
+        with torch.no_grad():
+            data = None
+            for batch_ndx, sample in enumerate(self.eval_data_loader):
+                data = sample
+                break
+            data = data.to(DEVICE)
+            data = norm_log2(data, k=LOG_K)
+            z_gt, mu, logvar = self.model.batch_seq_encode_to_z(data)
+            pred_x_loss, pred_z_loss = self.normal_train(data, z_gt)
+            wandb.log({
+                'eval_pred_x_loss': pred_x_loss.item(),
+                'eval_z_loss': pred_z_loss.item(),
+                'iter': iter_num,
+            })
+        self.config['eval_recons'] = False
+        self.model.train()
+    
+
+    def stupid_train_2(self, z_gt):
+        base_len_1, base_len_2 = random.sample(range(3, 7), 2)
+        z_gen_1 = self.normal_predict(z_gt, base_len_1, is_schedule=False)
+        z_gen_2 = self.normal_predict(z_gt, base_len_2, is_schedule=False)
+        max_base_len = max(base_len_1, base_len_2)
+        z_loss = self.mse_loss(z_gen_1[:, max_base_len:, :], z_gen_2[:, max_base_len:, :])
+        return z_loss * self.z_rnn_loss_scalar
+        
+
+    def stupid_train(self, x, z_gt):
+        shift = random.randint(1, 10)
+        if self.is_stupid_add_len:
+            add_len = shift
+        else:
+            add_len = 0
+        total_len = z_gt.size(1) + add_len
+        z_gen = self.normal_predict(z_gt, base_len=None, is_schedule=False, total_len=total_len)
+        x1 = x[:, 1:, :, :, :]
+        x1_gen = self.model.batch_seq_decode_from_z(z_gen)
+        x1_gen_shift = x1_gen[:, shift:, :, :, :]
+        
+        z_gen_shift = z_gen[:, shift:, :]
+        z_gt_shift = z_gt[:, shift:, :]
+        shift_base_len = min(z_gt_shift.size(1), self.base_len)
+        z_shift_gen = self.normal_predict(z_gt_shift, base_len=shift_base_len, is_schedule=False, total_len=total_len - shift)
+        x1_shift_gen = self.model.batch_seq_decode_from_z(z_shift_gen)
+
+        # Basic RNN loss
+        xloss= nn.BCELoss(reduction='sum')(x1_gen[:, :x1_gen.size(1)-add_len, ...], x1)
+        zloss = self.mse_loss(z_gen[:, :z_gen.size(1)-add_len, ...], z_gt[:, 1:, :])
+
+        # Shift gen to gt loss
+        xloss_shift = nn.BCELoss(reduction='sum')(
+            x1_shift_gen[:, :x1_shift_gen.size(1)-add_len, ...], 
+            x1[:, shift:, ...])
+        zloss_shift = self.mse_loss(z_shift_gen[:, :z_shift_gen.size(1)-add_len, ...], z_gt[:, 1+shift:, :])
+
+        # Shift gen to gen shift loss
+        xloss_gen_shift = nn.BCELoss(reduction='sum')(x1_gen_shift, x1_shift_gen.detach()) + nn.BCELoss(reduction='sum')(x1_shift_gen, x1_gen_shift.detach())
+        zloss_gen_shift = self.mse_loss(z_gen_shift, z_shift_gen)
+
+        if self.curr_train_iter % 1000 == 0 and not self.config['eval_recons'] and self.is_save_img:
+            save_spectrogram(tensor2spec(x1_gen[0])[0], f'{self.train_result_path}{self.curr_train_iter}-stupid_pred.png')
+
+        return (xloss + xloss_shift + xloss_gen_shift), self.z_rnn_loss_scalar * (zloss + zloss_shift + zloss_gen_shift)
+
+
+
+    def normal_predict(self, z_gt, base_len=None, is_schedule=False, total_len=None):
+        if total_len is None:
+            total_len = z_gt.size(1)
+        if base_len is None:
+            base_len = self.base_len
+        sample = list(range(base_len))
+        if self.linear_schedule > 0 and is_schedule and not self.config['eval_recons']:
+            add_sample = random.sample(range(base_len, total_len), int((total_len - base_len) * self.linear_schedule_rate))
+            sample.extend(add_sample)
+            print(f"Sample points: {sample}")
+        z_gen = self.model.predict_with_symmetry(z_gt, sample, lambda z: z, total_len)
+        return z_gen
+    
+    
+    def normal_train(self, x, z_gt, base_len=None):
+        z_gen = self.normal_predict(z_gt, base_len, is_schedule=True)
+        x1 = x[:, 1:, :, :, :]
+        x_loss, z_loss = self.calc_rnn_loss(x1, z_gt, z_gen)
+        return x_loss, z_loss
+
+
+    def encode_first_frame_to_z(self, data):
+        data = data.to(DEVICE)
+        data = norm_log2(data, k=LOG_K)
+        data = data[:, 0:1, :, :, :]
+        with torch.no_grad():
+            z_gt, mu, logvar = self.model.batch_seq_encode_to_z(data)
+            return mu[:, 0, :].cpu()
+        
+
+    def init_wandb(self):
+        wandb.init(
+            project=self.config['project_name'], 
+            name=self.config['name'],
+            config=self.config,
+            group= 'intrinsic' if self.is_intrinsic_train else 'normal',
+        )
+
 
     def train(self):
+        self.init_wandb()
         if not self.config['eval_recons']:
             create_path_if_not_exist(self.train_result_path)
             self.model.train()
             self.resume()
-            train_loss_counter = LossCounter(['loss_ED', 'loss_ERnnD', 'loss_Rnn',
-                                            'loss_TRnnTrD_x1', 'loss_RRnnRrD_x1', 'loss_ZRnnZrD_x1',
-                                            'loss_TRnnTr_z1', 'loss_RRnnRr_z1', 'loss_ZRnnZr_z1',
-                                            'KLD'])
+            train_loss_counter = LossCounter(['loss_ED', 'loss_ERnnD', 'loss_z', 'KLD'])
             iter_num = train_loss_counter.load_iter_num(self.train_record_path)
-            curr_iter = iter_num
             optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: self.scheduler_func(curr_iter))
         else:
             self.model.eval()
             self.model.load_state_dict(self.model.load_tensor(self.model_path))
-            train_loss_counter = LossCounter(['loss_ED', 'loss_ERnnD', 'loss_Rnn',
-                                            'loss_TRnnTrD_x1', 'loss_RRnnRrD_x1', 'loss_ZRnnZrD_x1',
-                                            'loss_TRnnTr_z1', 'loss_RRnnRr_z1', 'loss_ZRnnZr_z1',
-                                            'KLD'])
+            train_loss_counter = LossCounter(['loss_ED', 'loss_ERnnD', 'loss_z', 'KLD'])
             iter_num = 0
-            curr_iter = 0
             optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         for i in range(iter_num, self.max_iter_num):
             print(i)
-            curr_iter = iter_num
+            self.curr_train_iter = i
+            self.linear_schedule_rate = self.linear_scheduler_func(i)
+            # print(f"Linear schedule rate: {self.linear_schedule_rate}")
             # data = next(self.train_data_loader)
             data = None
             for batch_ndx, sample in enumerate(self.train_data_loader):
                 data = sample
                 break
-            data = data.to(DEVICE) # change me 
+            data = data.to(DEVICE) # change me
             data = norm_log2(data, k=LOG_K)
             is_log = (i % self.log_interval == 0 and i != 0)
-            # save_spectrogram(tensor2spec(data[0])[0], f'{self.train_result_path}{i}-data.png')
-            # for j in range(0, len(data[0])):
-            #     save_spectrogram(tensor2spec(data[0][j].unsqueeze(0))[0], f'{self.train_result_path}{i}-{j}-data.png')
             optimizer.zero_grad()
-            I_sample_points = self.gen_sample_points(self.base_len, data.size(1), i, self.enable_sample) # sampling for to transit from teacher forcing to student forcing
-            T_sample_points = self.gen_sample_points(self.base_len, data.size(1), i, self.enable_sample)
-
             z_gt, mu, logvar = self.model.batch_seq_encode_to_z(data)
-
             if self.config['ae'] or self.config['eval_recons']:
                 z_gt = mu
-            z_gt_p = z_gt[..., 0:1]
-            z_gt_c = z_gt[..., 1:]
-            z_gt_cr = repeat_one_dim(z_gt_c, sample_range=10)
-            z_gt_cr_extended = repeat_one_dim(z_gt_c, sample_range=10, repeat_times=z_gt_c.shape[1] + self.config['additional_symm_steps'])
-            z_gt_cr = z_gt_cr_extended[:z_gt_cr.shape[0], :z_gt_cr.shape[1], :z_gt_cr.shape[2]]
-            if self.config['no_repetition'] or self.config['beta_vae']:
-                z_combine = torch.cat((z_gt_p, z_gt_c), -1)
-            else:
-                z_combine = torch.cat((z_gt_p, z_gt_cr), -1)
-            T, Tr = make_translation_batch(batch_size=self.batch_size * DT_BATCH_MULTIPLE, dim=np.array([1]),
-                                           t_range=self.t_range)
-            z0_rnn_extended = self.model.predict_with_symmetry(z_gt_p, I_sample_points, lambda z: z, self.config['additional_symm_steps']) # Except there is no symm function. and this is just pred w/ RNN?
-            # extended with out-of-range predictions for long imagination
-            z0_rnn = z0_rnn_extended[:, :z_gt.shape[1]-1, :]
-            
+        
             # Recons, KLD
-            vae_loss = self.calc_vae_loss(data, z_combine, mu, logvar, is_log * i) 
+            vae_loss = self.calc_vae_loss(data, z_gt, mu, logvar) 
             if self.config['ae'] and not self.config['eval_recons']:
                 vae_loss = vae_loss[0], torch.zeros_like(vae_loss[1])
 
+            total_pred_x_loss = torch.zeros(1, device=DEVICE)
+            total_pred_z_loss = torch.zeros(1, device=DEVICE)
             # Pred_recon, rnn_prior
-            rnn_loss = self.calc_rnn_loss(data[:, 1:, :, :, :], z_gt_p, z0_rnn, is_log * i, z_gt_cr[:, :-1, :])
-            
-            # Ablate the RNN loss
-            if self.config['no_rnn']:
-                rnn_loss = torch.zeros_like(rnn_loss[0]), torch.zeros_like(rnn_loss[1])
+            if self.is_intrinsic_train:
+                pred_x_loss, pred_z_loss = self.intrinsic_train(data, z_gt)
+                total_pred_x_loss += pred_x_loss
+                total_pred_z_loss += pred_z_loss
+            if self.is_normal_train:
+                pred_x_loss, pred_z_loss = self.normal_train(data, z_gt)
+                total_pred_x_loss += pred_x_loss
+                total_pred_z_loss += pred_z_loss
+            if self.is_stupid_train:
+                pred_x_loss, pred_z_loss = self.stupid_train(data, z_gt)
+                total_pred_x_loss += pred_x_loss
+                total_pred_z_loss += pred_z_loss
 
-            R_loss = (torch.zeros(2))
-            Z_loss = (torch.zeros(2))
-            # The actual symm step
-            T_loss = self.batch_symm_loss(
-    
-                data[:, 1:, :, :, :], z_gt_p, z0_rnn_extended, T_sample_points, DT_BATCH_MULTIPLE,
-                lambda z: symm_trans(z, T), lambda z: symm_trans(z, Tr), z_gt_cr_extended[:, :-1, :]
-            )
-            if self.config['no_symm'] or self.config['beta_vae']:
-                T_loss = (torch.zeros(2))
-
-            loss = self.loss_func(vae_loss, rnn_loss, T_loss, R_loss, Z_loss, train_loss_counter)
-            if not self.config['eval_recons']:
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
-            else:
-                self.eval_recons_self.append(vae_loss[0].detach().item())
-                self.eval_recons_pred.append(rnn_loss[0].detach().item())
-                self.eval_recons_prior.append(rnn_loss[1].detach().item())
-
-            if self.config['eval_recons'] and (i+1) * self.batch_size >= len(self.dataset):
-                print(f'Eval ends. total iters: {i+1}')
-                return self.eval_recons_self, self.eval_recons_pred, self.eval_recons_prior
+            # compute loss
+            loss = self.loss_func(i, vae_loss, total_pred_x_loss, total_pred_z_loss, train_loss_counter)
+            loss.backward()
+            optimizer.step()
 
             if is_log and not self.config['eval_recons']:
+                self.eval(i)
+                r2_train = eval_linearity(self.dataset, self.encode_first_frame_to_z)
+                r2_eval = eval_linearity(self.eval_dataset, self.encode_first_frame_to_z)
+                wandb.log({'r2_train': r2_train, 'r2_eval': r2_eval,'iter': i})
                 self.model.save_tensor(self.model.state_dict(), self.model_path)
                 print(train_loss_counter.make_record(i))
                 train_loss_counter.record_and_clear(self.train_record_path, i)
             if i % self.checkpoint_interval == 0 and i != 0 and not self.config['eval_recons']:
-                self.model.save_tensor(self.model.state_dict(), f'./checkpoints/{self.config["name"]}_checkpoint_{i}.pt')
+                self.model.save_tensor(self.model.state_dict(), f'{self.config["name"]}_checkpoint_{i}.pt')
+        wandb.finish()
+        self.curr_train_iter = 0
+                
 
     def save_audio(self, spec, name, sample_rate=16000):
         recon_waveform = self.griffin_lim(spec.cpu())
         torchaudio.save(name, recon_waveform, sample_rate)
-
-    def batch_symm_loss(self, x1, z_gt, z0_rnn, sample_points, symm_batch_multiple, symm_func, symm_reverse_func, z_gt_cr):
-        z_gt_repeat = z_gt.repeat(symm_batch_multiple, 1, 1)
-        z0_S_rnn = self.model.predict_with_symmetry(z_gt_repeat, sample_points, symm_func, self.config['additional_symm_steps']) # prediction with symm
-        z0_rnn_repeat = z0_rnn.repeat(symm_batch_multiple, 1, 1)
-        z_gt_cr_repeat = z_gt_cr.repeat(symm_batch_multiple, 1, 1)[:, 0:self.config['seq_len']-1+self.config['additional_symm_steps'], :]
-        x1_repeat = x1.repeat(symm_batch_multiple, 1, 1, 1, 1)[:, 0:self.config['seq_len']-1, :, :, :]
-        zloss_S_rnn_Sr_D__x1, zloss_S_rnn_Sr__z1 = \
-            self.calc_symm_loss(x1_repeat, z_gt_repeat, z0_rnn_repeat, z0_S_rnn, symm_reverse_func, z_gt_cr_repeat)
-        return zloss_S_rnn_Sr_D__x1 / symm_batch_multiple, zloss_S_rnn_Sr__z1 / symm_batch_multiple
 
     def batch_normalize(self, tensor: torch.Tensor):
         mean = torch.mean(tensor)
@@ -293,7 +404,7 @@ class BallTrainer:
         return (tensor - mean) / std
 
 
-    def calc_rnn_loss(self, x1, z_gt, z0_rnn, log_num=0, z_gt_cr=None):
+    def calc_rnn_loss(self, x1, z_gt, z0_rnn, z_gt_cr=None, is_save_img=True):
         if z_gt_cr is None:
             z_next = z0_rnn
         else:
@@ -301,7 +412,7 @@ class BallTrainer:
         recon_next = self.model.batch_seq_decode_from_z(z_next)
         if self.config['eval_recons']:
             xloss_ERnnD = nn.BCELoss(reduction='mean')(recon_next, x1)
-            zloss_Rnn = nn.MSELoss()(self.batch_normalize(z0_rnn), self.batch_normalize(z_gt[:, 1:, :]))
+            zloss_Rnn = nn.MSELoss(reduction='mean')(self.batch_normalize(z0_rnn), self.batch_normalize(z_gt[:, 1:, :]))
             if zloss_Rnn.item() > 1:
                 print(f"Outlier !!! ")
                 print(z0_rnn)
@@ -309,63 +420,45 @@ class BallTrainer:
         else:
             xloss_ERnnD = nn.BCELoss(reduction='sum')(recon_next, x1)
             zloss_Rnn = self.z_rnn_loss_scalar * self.mse_loss(z0_rnn, z_gt[:, 1:, :])
-        if log_num != 0 and not self.config['eval_recons']:
-            save_spectrogram(tensor2spec(recon_next[0])[0], f'{self.train_result_path}{log_num}-recon_pred.png')
+        if self.curr_train_iter % 1000 == 0 and not self.config['eval_recons'] and self.is_save_img and is_save_img:
+            save_spectrogram(tensor2spec(recon_next[0])[0], f'{self.train_result_path}{self.curr_train_iter}-recon_pred.png')
             # self.save_audio(tensor2spec(recon_next[0]), f'{self.train_result_path}{log_num}-recon_pred.wav')
 
         return xloss_ERnnD, zloss_Rnn
 
-    def calc_vae_loss(self, data, z_gt, mu, logvar, log_num=0):
+    def calc_vae_loss(self, data, z_gt, mu, logvar):
         recon = self.model.batch_seq_decode_from_z(z_gt)
         if self.config['eval_recons']:
             recon_loss = nn.BCELoss(reduction='mean')(recon, data)
         else:
             recon_loss = nn.BCELoss(reduction='sum')(recon, data)
         KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - torch.exp(logvar)) * self.kld_loss_scalar
-        if log_num != 0 and not self.config['eval_recons']:
-            save_spectrogram(tensor2spec(data[0])[0], f'{self.train_result_path}{log_num}-gt.png')
+        if self.curr_train_iter % 1000 == 0 and not self.config['eval_recons']:
+            save_spectrogram(tensor2spec(data[0])[0], f'{self.train_result_path}{self.curr_train_iter}-gt.png')
             # self.save_audio(tensor2spec(data[0]), f'{self.train_result_path}{log_num}-gt.wav')
-            save_spectrogram(tensor2spec(recon[0])[0], f'{self.train_result_path}{log_num}-recon.png')
+            save_spectrogram(tensor2spec(recon[0])[0], f'{self.train_result_path}{self.curr_train_iter}-recon.png')
             # self.save_audio(tensor2spec(recon[0]), f'{self.train_result_path}{log_num}-recon.wav')
         return recon_loss, KLD
 
-    def calc_symm_loss(self, x1, z_gt, z0_rnn, z0_S_rnn, symm_reverse_func, z_gt_cr):
-        z0_S_rnn_Sr = do_seq_symmetry(z0_S_rnn, symm_reverse_func)[:, 0:self.config['seq_len']-1+self.config['additional_symm_steps'], :]
-        # Symm loss against RNN predictions
-        if self.config['additional_symm_steps'] > 0 or self.config['symm_against_rnn']:
-            zloss_S_rnn_Sr__z1 = self.z_symm_loss_scalar * self.mse_loss(z0_S_rnn_Sr[:, self.config['symm_start_step']:, :], z0_rnn[:, self.config['symm_start_step']:, :])
-            # batch decode predicted z (after reverse symmetry)
-            z0_S_rnn_Sr_D = self.model.batch_seq_decode_from_z(torch.cat((z0_S_rnn_Sr[:, self.config['symm_start_step']:, :], z_gt_cr[:, self.config['symm_start_step']:, :]), -1))
-            z0_rnn_D = self.model.batch_seq_decode_from_z(torch.cat((z0_rnn[:, self.config['symm_start_step']:, :], z_gt_cr[:, self.config['symm_start_step']:, :]), -1))
-            zloss_S_rnn_Sr_D__x1 = nn.BCELoss(reduction='sum')(z0_S_rnn_Sr_D, z0_rnn_D)
-            zloss_S_rnn_Sr_D__x1 = 0 # Interesting... If I let zloss_S_rnn_Sr_D__x1 = 0, the gradient does not explode?
 
-            # Rescale 
-            zloss_S_rnn_Sr__z1 *= (zloss_S_rnn_Sr__z1-1) / (zloss_S_rnn_Sr__z1-1+self.config['additional_symm_steps'])
-            zloss_S_rnn_Sr_D__x1 *= (zloss_S_rnn_Sr__z1-1) / (zloss_S_rnn_Sr__z1-1+self.config['additional_symm_steps'])
-        # Symm loss against GT
-        else:
-            zloss_S_rnn_Sr__z1 = self.z_symm_loss_scalar * self.mse_loss(z0_S_rnn_Sr, z_gt[:, 1:self.config['seq_len'], :])
-            z0_S_rnn_Sr_D = self.model.batch_seq_decode_from_z(torch.cat((z0_S_rnn_Sr, z_gt_cr), -1))
-            zloss_S_rnn_Sr_D__x1 = nn.BCELoss(reduction='sum')(z0_S_rnn_Sr_D, x1)
-        return zloss_S_rnn_Sr_D__x1, zloss_S_rnn_Sr__z1
-
-    def loss_func(self, vae_loss, rnn_loss, T_loss, R_loss, Z_loss, loss_counter):
+    def loss_func(self, iter, vae_loss, pred_x_loss, pred_z_loss, loss_counter):
         xloss_ED, KLD = vae_loss
-        xloss_ERnnD, zloss_Rnn = rnn_loss
-        zloss_T_rnn_Sr_T__x1, zloss_T_rnn_Tr__z1 = T_loss
-        zloss_R_rnn_Sr_R__x1, zloss_R_rnn_Rr__z1 = R_loss
-        zloss_Z_rnn_Sr_Z__x1, zloss_Z_rnn_Rr__z1 = Z_loss
-
-        loss = 0
-        loss += xloss_ED + KLD + xloss_ERnnD
-        loss += zloss_Rnn
-        loss += zloss_T_rnn_Tr__z1 + zloss_R_rnn_Rr__z1 + zloss_Z_rnn_Rr__z1
-        loss += zloss_T_rnn_Sr_T__x1 + zloss_R_rnn_Sr_R__x1 + zloss_Z_rnn_Sr_Z__x1
-
-        loss_counter.add_values([xloss_ED.item(), xloss_ERnnD.item(), zloss_Rnn.item(),
-                                 zloss_T_rnn_Sr_T__x1.item(), zloss_R_rnn_Sr_R__x1.item(), zloss_Z_rnn_Sr_Z__x1.item(),
-                                 zloss_T_rnn_Tr__z1.item(), zloss_R_rnn_Rr__z1.item(), zloss_Z_rnn_Rr__z1.item(),
+        loss = torch.zeros(1, device=DEVICE)
+        loss += xloss_ED + KLD + pred_x_loss + pred_z_loss
+        loss_counter.add_values([xloss_ED.item(), 
+                                 pred_x_loss.item(), 
+                                 pred_z_loss.item(), 
                                  KLD.item()
                                  ])
+        wandb.log({
+            'xloss_ED': xloss_ED.item(),
+            'pred_x_loss': pred_x_loss.item(),
+            'pred_z_loss': pred_z_loss.item(),
+            'KLD': KLD.item(),
+            'iter': iter,
+        })
         return loss
+
+
+if __name__ == '__main__':
+    print(sample_lengths())

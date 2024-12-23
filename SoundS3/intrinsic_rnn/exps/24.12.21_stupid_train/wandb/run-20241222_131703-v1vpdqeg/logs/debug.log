@@ -1,0 +1,30 @@
+2024-12-22 13:17:03,919 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Current SDK version is 0.17.3
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Configure stats pid to 54912
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Loading settings from C:\Users\Lxj\.config\wandb\settings
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Loading settings from D:\Projects\Others Symm\sps_sound\wandb\settings
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'SoundS3\\intrinsic_rnn\\main_train.py', 'program_abspath': 'd:\\Projects\\Others Symm\\sps_sound\\SoundS3\\intrinsic_rnn\\main_train.py', 'program': 'd:\\Projects\\Others Symm\\sps_sound\\SoundS3\\intrinsic_rnn\\main_train.py'}
+2024-12-22 13:17:03,920 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Applying login settings: {'api_key': '***REDACTED***'}
+2024-12-22 13:17:03,921 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Applying login settings: {'api_key': '***REDACTED***'}
+2024-12-22 13:17:03,921 INFO    MainThread:54912 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-12-22 13:17:03,921 INFO    MainThread:54912 [wandb_init.py:_log_setup():520] Logging user logs to d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\exps\24.12.21_stupid_train\wandb\run-20241222_131703-v1vpdqeg\logs\debug.log
+2024-12-22 13:17:03,921 INFO    MainThread:54912 [wandb_init.py:_log_setup():521] Logging internal logs to d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\exps\24.12.21_stupid_train\wandb\run-20241222_131703-v1vpdqeg\logs\debug-internal.log
+2024-12-22 13:17:03,921 INFO    MainThread:54912 [wandb_init.py:init():560] calling init triggers
+2024-12-22 13:17:03,922 INFO    MainThread:54912 [wandb_init.py:init():567] wandb.init called with sweep_config: {}
+config: {'train_data_path': '../../../../makeSoundDatasets/datasets/cleanTrain_accordion', 'eval_data_path': '../../../../makeSoundDatasets/datasets/cleanTrain2', 'train_result_path': 'results/', 'train_record_path': 'train_record.txt', 'eval_record_path': 'eval_record.txt', 'model_path': 'current_model.pt', 'rnn_hidden_size': 256, 'rnn_num_layers': 1, 'latent_code_num': 1, 'learning_rate': 0.0001, 'z_rnn_loss_scalar': 0.01, 'checkpoint_interval': 300000, 'max_iter_num': 15001, 'log_interval': 100, 'eval_interval': 1000, 'linear_schedule': -1, 'rnn_type': 'RNN', 'batch_size': 32, 'kld_loss_scalar': 0.001, 'eval_recons': False, 'seq_len': 15, 'base_len': 4, 'ae': False, 'is_save_img': True, 'is_intrinsic_train': False, 'is_normal_train': False, 'is_stupid_train': True, 'is_stupid_add_len': False, 'name': '24.12.21_stupid_train', 'project_name': 'intrinsic_rnn_2'}
+2024-12-22 13:17:03,922 INFO    MainThread:54912 [wandb_init.py:init():610] starting backend
+2024-12-22 13:17:03,922 INFO    MainThread:54912 [wandb_init.py:init():614] setting up manager
+2024-12-22 13:17:03,925 INFO    MainThread:54912 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=spawn, using: spawn
+2024-12-22 13:17:03,946 INFO    MainThread:54912 [wandb_init.py:init():622] backend started and connected
+2024-12-22 13:17:03,950 INFO    MainThread:54912 [wandb_init.py:init():711] updated telemetry
+2024-12-22 13:17:04,226 INFO    MainThread:54912 [wandb_init.py:init():744] communicating run to backend with 90.0 second timeout
+2024-12-22 13:17:05,762 INFO    MainThread:54912 [wandb_run.py:_on_init():2402] communicating current version
+2024-12-22 13:17:07,719 INFO    MainThread:54912 [wandb_run.py:_on_init():2411] got version response upgrade_message: "wandb version 0.19.1 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-12-22 13:17:07,719 INFO    MainThread:54912 [wandb_init.py:init():795] starting run threads in backend
+2024-12-22 13:17:10,689 INFO    MainThread:54912 [wandb_run.py:_console_start():2380] atexit reg
+2024-12-22 13:17:10,689 INFO    MainThread:54912 [wandb_run.py:_redirect():2235] redirect: wrap_raw
+2024-12-22 13:17:10,689 INFO    MainThread:54912 [wandb_run.py:_redirect():2300] Wrapping output streams.
+2024-12-22 13:17:10,689 INFO    MainThread:54912 [wandb_run.py:_redirect():2325] Redirects installed.
+2024-12-22 13:17:10,707 INFO    MainThread:54912 [wandb_init.py:init():838] run started, returning control to user process
+2024-12-22 13:17:24,160 WARNING MsgRouterThr:54912 [router.py:message_loop():77] message_loop has been closed

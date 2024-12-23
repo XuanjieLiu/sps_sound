@@ -1,0 +1,36 @@
+2024-12-19 13:19:40,524 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Current SDK version is 0.17.3
+2024-12-19 13:19:40,524 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Configure stats pid to 34484
+2024-12-19 13:19:40,524 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Loading settings from C:\Users\Lxj\.config\wandb\settings
+2024-12-19 13:19:40,525 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Loading settings from D:\Projects\Others Symm\sps_sound\wandb\settings
+2024-12-19 13:19:40,525 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-12-19 13:19:40,525 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'SoundS3\\intrinsic_rnn\\main_train.py', 'program_abspath': 'd:\\Projects\\Others Symm\\sps_sound\\SoundS3\\intrinsic_rnn\\main_train.py', 'program': 'd:\\Projects\\Others Symm\\sps_sound\\SoundS3\\intrinsic_rnn\\main_train.py'}
+2024-12-19 13:19:40,525 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Applying login settings: {'api_key': '***REDACTED***'}
+2024-12-19 13:19:40,525 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Applying login settings: {'api_key': '***REDACTED***'}
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:_log_setup():520] Logging user logs to d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\exps\2024.12.19_intrinsic_train_nosche_2\wandb\run-20241219_131940-cfivxx85\logs\debug.log
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:_log_setup():521] Logging internal logs to d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\exps\2024.12.19_intrinsic_train_nosche_2\wandb\run-20241219_131940-cfivxx85\logs\debug-internal.log
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:init():560] calling init triggers
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:init():567] wandb.init called with sweep_config: {}
+config: {'train_data_path': '../../../../makeSoundDatasets/datasets/cleanTrain_accordion', 'eval_data_path': '../../../../makeSoundDatasets/datasets/cleanTrain2', 'train_result_path': 'results/', 'train_record_path': 'train_record.txt', 'eval_record_path': 'eval_record.txt', 'model_path': 'current_model.pt', 'rnn_hidden_size': 256, 'rnn_num_layers': 1, 'latent_code_num': 1, 'learning_rate': 0.001, 'z_rnn_loss_scalar': 2.0, 'checkpoint_interval': 300000, 'max_iter_num': 15001, 'log_interval': 100, 'eval_interval': 1000, 'linear_schedule': -1, 'rnn_type': 'RNN', 'batch_size': 32, 'kld_loss_scalar': 0.001, 'eval_recons': False, 'seq_len': 15, 'base_len': 5, 'ae': False, 'is_save_img': True, 'is_intrinsic': True, 'name': '2024.12.19_intrinsic_train_nosche_2', 'project_name': 'intrinsic_rnn'}
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:init():610] starting backend
+2024-12-19 13:19:40,526 INFO    MainThread:34484 [wandb_init.py:init():614] setting up manager
+2024-12-19 13:19:40,528 INFO    MainThread:34484 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=spawn, using: spawn
+2024-12-19 13:19:40,531 INFO    MainThread:34484 [wandb_init.py:init():622] backend started and connected
+2024-12-19 13:19:40,537 INFO    MainThread:34484 [wandb_init.py:init():711] updated telemetry
+2024-12-19 13:19:40,809 INFO    MainThread:34484 [wandb_init.py:init():744] communicating run to backend with 90.0 second timeout
+2024-12-19 13:19:42,344 INFO    MainThread:34484 [wandb_run.py:_on_init():2402] communicating current version
+2024-12-19 13:19:44,084 INFO    MainThread:34484 [wandb_run.py:_on_init():2411] got version response upgrade_message: "wandb version 0.19.1 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-12-19 13:19:44,084 INFO    MainThread:34484 [wandb_init.py:init():795] starting run threads in backend
+2024-12-19 13:19:44,850 INFO    MainThread:34484 [wandb_run.py:_console_start():2380] atexit reg
+2024-12-19 13:19:44,850 INFO    MainThread:34484 [wandb_run.py:_redirect():2235] redirect: wrap_raw
+2024-12-19 13:19:44,850 INFO    MainThread:34484 [wandb_run.py:_redirect():2300] Wrapping output streams.
+2024-12-19 13:19:44,851 INFO    MainThread:34484 [wandb_run.py:_redirect():2325] Redirects installed.
+2024-12-19 13:19:44,853 INFO    MainThread:34484 [wandb_init.py:init():838] run started, returning control to user process
+2024-12-19 13:34:45,181 INFO    MainThread:34484 [wandb_run.py:_finish():2109] finishing run xuanjieliu-mbzuai/intrinsic_rnn/cfivxx85
+2024-12-19 13:34:45,181 INFO    MainThread:34484 [wandb_run.py:_atexit_cleanup():2349] got exitcode: 0
+2024-12-19 13:34:45,181 INFO    MainThread:34484 [wandb_run.py:_restore():2332] restore
+2024-12-19 13:34:45,181 INFO    MainThread:34484 [wandb_run.py:_restore():2338] restore done
+2024-12-19 13:34:54,167 INFO    MainThread:34484 [wandb_run.py:_footer_history_summary_info():3991] rendering history
+2024-12-19 13:34:54,170 INFO    MainThread:34484 [wandb_run.py:_footer_history_summary_info():4023] rendering summary
+2024-12-19 13:34:54,215 INFO    MainThread:34484 [wandb_run.py:_footer_sync_info():3950] logging synced files

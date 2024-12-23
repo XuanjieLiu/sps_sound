@@ -21,9 +21,6 @@ LAST_W = 1
 
 CHANNELS = [64, 64, 128, 128]
 
-RNN_INPUT_SIZE = 1
-RNN_OUT_FEATURES = 1
-
 
 def repeat_one_dim(z, repeat_times=None, sample_range=None):
     length = z.size(1)
@@ -67,7 +64,7 @@ class Conv2dGruConv2d(nn.Module):
         if 'GRU' in config.keys() and config['GRU']:
             print('GRUUUUUUUUUUUINEUFBNQWEJEUBGIFJKNEIFRYG!@#')
             self.rnn = nn.GRU(
-                input_size=RNN_INPUT_SIZE,
+                input_size=self.latent_code_num,
                 hidden_size=self.rnn_hidden_size,
                 num_layers=self.rnn_num_layers,
                 batch_first=True,
@@ -75,12 +72,12 @@ class Conv2dGruConv2d(nn.Module):
 
         else:   
             self.rnn = nn.RNN(
-                input_size=RNN_INPUT_SIZE,
+                input_size=self.latent_code_num,
                 hidden_size=self.rnn_hidden_size,
                 num_layers=self.rnn_num_layers,
                 batch_first=True,
             )
-        self.fc2 = nn.Linear(in_features=self.rnn_hidden_size, out_features=RNN_OUT_FEATURES)
+        self.fc2 = nn.Linear(in_features=self.rnn_hidden_size, out_features=self.latent_code_num)
 
         self.fc3 = nn.Sequential(
             nn.Linear(self.latent_code_num, 16),
@@ -146,16 +143,16 @@ class Conv2dGruConv2d(nn.Module):
         z2 = self.fc2(out_r.squeeze(1))
         return z2, hidden_rz
 
-    def predict_with_symmetry(self, z_gt, sample_points, symm_func, additional_symm_steps = 0):
+    def predict_with_symmetry(self, z_gt, sample_points, symm_func, all_input_steps):
         z_SR_seq_batch = []
         hidden_r = torch.zeros(self.rnn_num_layers, z_gt.size(0), self.rnn_hidden_size, device=DEVICE)
-        for i in range(z_gt.size(1) + additional_symm_steps):
+        for i in range(all_input_steps):
             """Schedule sample"""
-            if i in sample_points or i >= z_gt.size(1):
-                z_S = z_SR_seq_batch[-1]
-            else:
+            if i in sample_points:
                 z = z_gt[:, i]
                 z_S = symm_func(z)
+            else:
+                z_S = z_SR_seq_batch[-1]
             z_SR, hidden_r = self.do_rnn(z_S, hidden_r)
             z_SR_seq_batch.append(z_SR)
         z_x0ESR = torch.stack(z_SR_seq_batch, dim=0).permute(1, 0, 2).contiguous()[:, :-1, :]
@@ -163,11 +160,11 @@ class Conv2dGruConv2d(nn.Module):
 
     """Z Repeat"""
     def recon_via_rnn(self, z):
-        sample_points = list(range(z.size(1)))[self.base_len:]
+        sample_points = list(range(z.size(1)))[:self.base_len]
         z_s = z[..., 0:1]
         z_c = z[..., 1:]
         z_cr = repeat_one_dim(z_c, sample_range=self.base_len)
-        z_s1 = self.predict_with_symmetry(z_s, sample_points, lambda x: x)
+        z_s1 = self.predict_with_symmetry(z_s, sample_points, lambda x: x, z.size(1))
         z_time_combine = torch.cat((z_s[:, 0:1, ...], z_s1), dim=1)
         z_code_combine = torch.cat((z_time_combine, z_cr), -1)
         return self.batch_seq_decode_from_z(z_code_combine), z_code_combine

@@ -1,0 +1,125 @@
+wandb_version: 1
+
+train_data_path:
+  desc: null
+  value: ../../../../makeSoundDatasets/datasets/cleanTrain_accordion
+eval_data_path:
+  desc: null
+  value: ../../../../makeSoundDatasets/datasets/cleanTrain2
+train_result_path:
+  desc: null
+  value: results/
+train_record_path:
+  desc: null
+  value: train_record.txt
+eval_record_path:
+  desc: null
+  value: eval_record.txt
+model_path:
+  desc: null
+  value: current_model.pt
+rnn_hidden_size:
+  desc: null
+  value: 256
+rnn_num_layers:
+  desc: null
+  value: 1
+latent_code_num:
+  desc: null
+  value: 1
+learning_rate:
+  desc: null
+  value: 0.0001
+z_rnn_loss_scalar:
+  desc: null
+  value: 0.01
+checkpoint_interval:
+  desc: null
+  value: 300000
+max_iter_num:
+  desc: null
+  value: 15001
+log_interval:
+  desc: null
+  value: 100
+eval_interval:
+  desc: null
+  value: 1000
+linear_schedule:
+  desc: null
+  value: -1
+rnn_type:
+  desc: null
+  value: RNN
+batch_size:
+  desc: null
+  value: 32
+kld_loss_scalar:
+  desc: null
+  value: 0.001
+eval_recons:
+  desc: null
+  value: false
+seq_len:
+  desc: null
+  value: 15
+base_len:
+  desc: null
+  value: 4
+ae:
+  desc: null
+  value: false
+is_save_img:
+  desc: null
+  value: true
+is_intrinsic_train:
+  desc: null
+  value: false
+is_normal_train:
+  desc: null
+  value: false
+is_stupid_train:
+  desc: null
+  value: true
+is_stupid_add_len:
+  desc: null
+  value: false
+name:
+  desc: null
+  value: 24.12.21_stupid_train
+project_name:
+  desc: null
+  value: intrinsic_rnn_2
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.11
+    cli_version: 0.17.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1734859179
+    t:
+      1:
+      - 1
+      - 5
+      - 41
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 41
+      - 53
+      - 55
+      3:
+      - 2
+      - 13
+      - 16
+      - 23
+      4: 3.10.11
+      5: 0.17.3
+      8:
+      - 3
+      - 5
+      13: windows-amd64
