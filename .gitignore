@@ -21,3 +21,5 @@ debug.py
 SoundS3/standard_model/checkpoints/
 data/
 *.rar
+**/wandb/
+*.pt
