@@ -45,7 +45,7 @@ EXP_ROOT_PATH = '{}{}'.format(os.path.dirname(os.path.abspath(__file__)), '/exps
 sys.path.append(EXP_ROOT_PATH)
 
 
-EXP_NAME = 'normal_train_linear_sched_4'
+EXP_NAME = '24.12.21_stupid_train2'
 
 
 exp_path = os.path.join(EXP_ROOT_PATH, EXP_NAME)

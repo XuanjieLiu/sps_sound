@@ -18,7 +18,7 @@ import torch
 EXP_ROOT_PATH = '{}{}'.format(os.path.dirname(os.path.abspath(__file__)), '/exps')
 sys.path.append(EXP_ROOT_PATH)
 
-EXP_NAME_LIST = ['24.12.21_stupid_train_addlen']
+EXP_NAME_LIST = ['24.12.21_normal_train3']
 PROJECT_NAME = 'intrinsic_rnn_2'
 
 for exp_name in EXP_NAME_LIST:
