@@ -45,7 +45,7 @@ EXP_ROOT_PATH = '{}{}'.format(os.path.dirname(os.path.abspath(__file__)), '/exps
 sys.path.append(EXP_ROOT_PATH)
 
 
-EXP_NAME = '24.12.21_stupid_train2'
+EXP_NAME = '24.12.27_normal_train1'
 
 
 exp_path = os.path.join(EXP_ROOT_PATH, EXP_NAME)
@@ -62,7 +62,9 @@ CONFIG = t_config.CONFIG
 CODE_LEN = CONFIG['latent_code_num']
 
 
-WAV_PATH = CONFIG['train_data_path']
+# WAV_PATH = CONFIG['train_data_path']
+# WAV_PATH = CONFIG['eval_data_path']
+WAV_PATH = '../../../../makeSoundDatasets/datasets/cleanTrain_accordion'
 
 n_fft = 1024
 win_length = 1024

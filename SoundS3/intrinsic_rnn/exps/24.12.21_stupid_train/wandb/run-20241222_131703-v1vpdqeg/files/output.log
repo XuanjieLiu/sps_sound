@@ -1,8 +1,0 @@
-New model is initialized
-0
-Traceback (most recent call last):
-  File "d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\main_train.py", line 37, in <module>
-    trainer.train()
-  File "d:\Projects\Others Symm\sps_sound\SoundS3\intrinsic_rnn\trainer.py", line 374, in train
-    pred_x_loss, pred_z_loss = self.stupid_train(z_gt)
-TypeError: Trainer.stupid_train() missing 1 required positional argument: 'x'

@@ -223,7 +223,7 @@ class Trainer:
             data = data.to(DEVICE)
             data = norm_log2(data, k=LOG_K)
             z_gt, mu, logvar = self.model.batch_seq_encode_to_z(data)
-            pred_x_loss, pred_z_loss = self.normal_train(data, z_gt)
+            pred_x_loss, pred_z_loss = self.normal_train(data, z_gt, is_schedule=False)
             wandb.log({
                 'eval_pred_x_loss': pred_x_loss.item(),
                 'eval_z_loss': pred_z_loss.item(),
@@ -295,8 +295,8 @@ class Trainer:
         return z_gen
     
     
-    def normal_train(self, x, z_gt, base_len=None):
-        z_gen = self.normal_predict(z_gt, base_len, is_schedule=True)
+    def normal_train(self, x, z_gt, base_len=None, is_schedule=False):
+        z_gen = self.normal_predict(z_gt, base_len, is_schedule=False)
         x1 = x[:, 1:, :, :, :]
         x_loss, z_loss = self.calc_rnn_loss(x1, z_gt, z_gen)
         return x_loss, z_loss
@@ -389,7 +389,8 @@ class Trainer:
                 print(train_loss_counter.make_record(i))
                 train_loss_counter.record_and_clear(self.train_record_path, i)
             if i % self.checkpoint_interval == 0 and i != 0 and not self.config['eval_recons']:
-                self.model.save_tensor(self.model.state_dict(), f'{self.config["name"]}_checkpoint_{i}.pt')
+                # self.model.save_tensor(self.model.state_dict(), f'{self.config["name"]}_checkpoint_{i}.pt')
+                self.model.save_tensor(self.model.state_dict(), f'checkpoint_{i}.pt')
         wandb.finish()
         self.curr_train_iter = 0
                 
